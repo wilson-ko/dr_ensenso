@@ -16,7 +16,9 @@ find_package(Ensenso REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem date_time chrono)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(jsoncpp REQUIRED)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
 
 find_package(PCL REQUIRED)
 
