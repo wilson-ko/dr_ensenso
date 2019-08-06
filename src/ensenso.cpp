@@ -19,20 +19,20 @@ NxLibInitGuard::NxLibInitGuard() {
 	}
 }
 
-NxLibInitGuard::~NxLibInitGuard() {
-	if (!moved_) nxLibFinalize();
+NxLibInitGuard::~NxLibInitGuard() { //NOLINT
+	if (!moved_) { nxLibFinalize(); }
 }
 
-NxLibInitGuard::NxLibInitGuard(NxLibInitGuard && other) {
+NxLibInitGuard::NxLibInitGuard(NxLibInitGuard && other) noexcept {
 	other.moved_ = true;
 }
 
-NxLibInitGuard & NxLibInitGuard::operator=(NxLibInitGuard && other) {
+NxLibInitGuard & NxLibInitGuard::operator=(NxLibInitGuard && other) noexcept {
 	other.moved_ = true;
 	return *this;
 }
 
-NxLibItem imageNode(NxLibItem stereo, std::optional<NxLibItem> monocular, ImageType type) {
+NxLibItem imageNode(NxLibItem const & stereo, std::optional<NxLibItem> monocular, ImageType type) {
 	switch (type) {
 		case ImageType::stereo_raw_left:             return stereo[itmImages][itmRaw][itmLeft];
 		case ImageType::stereo_raw_right:            return stereo[itmImages][itmRaw][itmRight];
@@ -46,28 +46,28 @@ NxLibItem imageNode(NxLibItem stereo, std::optional<NxLibItem> monocular, ImageT
 	throw std::runtime_error("Failed to get image node: unknown image type: " + std::to_string(int(type)));
 }
 
-Ensenso::Ensenso(std::string serial, bool connect_monocular, NxLibInitToken token) : init_token_{std::move(token)} {
-	if (serial == "") {
+Ensenso::Ensenso(std::string const & serial, bool connect_monocular, NxLibInitToken token) : init_token_{std::move(token)} {
+	if (serial.empty()) {
 		// Try to find a stereo camera.
 		std::optional<NxLibItem> camera = openCameraByType(valStereo);
-		if (!camera) throw std::runtime_error("Failed to open any Ensenso camera.");
+		if (!camera) { throw std::runtime_error("Failed to open any Ensenso camera."); }
 		stereo_node = *camera;
 	} else {
 		// Open the requested camera.
 		std::optional<NxLibItem> camera = openCameraBySerial(serial);
-		if (!camera) throw std::runtime_error("Could not open an Ensenso camera with serial " + serial + ".");
+		if (!camera) { throw std::runtime_error("Could not open an Ensenso camera with serial " + serial + "."); }
 		stereo_node = *camera;
 	}
 
 	// Get the linked monocular camera.
 	if (connect_monocular) {
 		monocular_node = openCameraByLink(serialNumber());
-		if (!monocular_node) throw std::runtime_error("Failed to open linked monocular camera.");
+		if (!monocular_node) { throw std::runtime_error("Failed to open linked monocular camera."); }
 	}
 }
 
 Ensenso::~Ensenso() {
-	if (!init_token_) return;
+	if (!init_token_) { return; }
 	executeNx(NxLibCommand(cmdClose));
 }
 
@@ -79,7 +79,7 @@ std::string Ensenso::monocularSerialNumber() const {
 	return monocular_node ? getNx<std::string>(monocular_node.value()[itmSerialNumber]) : "";
 }
 
-bool Ensenso::loadParameters(std::string const parameters_file, bool entire_tree) {
+bool Ensenso::loadParameters(std::string const & parameters_file, bool entire_tree) {
 	std::ifstream file;
 	file.open(parameters_file);
 
@@ -111,8 +111,8 @@ bool Ensenso::loadParameters(std::string const parameters_file, bool entire_tree
 	return true;
 }
 
-bool Ensenso::loadMonocularParameters(std::string const parameters_file, bool entire_tree) {
-	if (!monocular_node) throw std::runtime_error("No monocular camera found. Can not load monocular camara parameters.");
+bool Ensenso::loadMonocularParameters(std::string const & parameters_file, bool entire_tree) {
+	if (!monocular_node) { throw std::runtime_error("No monocular camera found. Can not load monocular camara parameters."); }
 
 	std::ifstream file;
 	file.open(parameters_file);
@@ -145,8 +145,8 @@ bool Ensenso::loadMonocularParameters(std::string const parameters_file, bool en
 	return true;
 }
 
-void Ensenso::loadMonocularUeyeParameters(std::string const parameters_file) {
-	if (!monocular_node) throw std::runtime_error("No monocular camera found. Can not load monocular camera UEye parameters.");
+void Ensenso::loadMonocularUeyeParameters(std::string const & parameters_file) {
+	if (!monocular_node) { throw std::runtime_error("No monocular camera found. Can not load monocular camera UEye parameters."); }
 	NxLibCommand command(cmdLoadUEyeParameterSet);
 	setNx(command.parameters()[itmFilename], parameters_file);
 	executeNx(command);
@@ -175,7 +175,7 @@ bool Ensenso::hasFrontLight() const {
 
 std::optional<bool> Ensenso::frontLight() {
 	NxLibItem item = stereo_node[itmParameters][itmCapture][itmFrontLight];
-	if (!item.exists()) return std::nullopt;
+	if (!item.exists()) { return std::nullopt; }
 	return getNx<bool>(item);
 }
 
@@ -211,12 +211,12 @@ bool Ensenso::trigger(bool stereo, bool monocular) const {
 	monocular = monocular && monocular_node;
 
 	NxLibCommand command(cmdTrigger);
-	if (stereo) setNx(command.parameters()[itmCameras][0], serialNumber());
-	if (monocular) setNx(command.parameters()[itmCameras][stereo ? 1 : 0], getNx<std::string>(monocular_node.value()[itmSerialNumber]));
+	if (stereo) { setNx(command.parameters()[itmCameras][0], serialNumber()); }
+	if (monocular) { setNx(command.parameters()[itmCameras][stereo ? 1 : 0], getNx<std::string>(monocular_node.value()[itmSerialNumber])); }
 	executeNx(command);
 
-	if (stereo && !getNx<bool>(command.result()[serialNumber()][itmTriggered])) return false;
-	if (monocular && !getNx<bool>(command.result()[monocularSerialNumber()][itmTriggered])) return false;
+	if (stereo && !getNx<bool>(command.result()[serialNumber()][itmTriggered])) { return false; }
+	if (monocular && !getNx<bool>(command.result()[monocularSerialNumber()][itmTriggered])) { return false; }
 	return true;
 }
 
@@ -224,24 +224,25 @@ bool Ensenso::retrieve(bool trigger, unsigned int timeout, bool stereo, bool mon
 	monocular = monocular && monocular_node;
 
 	// nothing to do?
-	if (!stereo && !monocular)
+	if (!stereo && !monocular) {
 		return true;
+	}
 
 	NxLibCommand command(trigger ? cmdCapture : cmdRetrieve);
 	setNx(command.parameters()[itmTimeout], int(timeout));
-	if (stereo) setNx(command.parameters()[itmCameras][0], serialNumber());
-	if (monocular) setNx(command.parameters()[itmCameras][stereo ? 1 : 0], getNx<std::string>(monocular_node.value()[itmSerialNumber]));
+	if (stereo) { setNx(command.parameters()[itmCameras][0], serialNumber()); }
+	if (monocular) { setNx(command.parameters()[itmCameras][stereo ? 1 : 0], getNx<std::string>(monocular_node.value()[itmSerialNumber])); }
 	executeNx(command);
 
-	if (stereo && !getNx<bool>(command.result()[serialNumber()][itmRetrieved])) return false;
-	if (monocular && !getNx<bool>(command.result()[monocularSerialNumber()][itmRetrieved])) return false;
+	if (stereo && !getNx<bool>(command.result()[serialNumber()][itmRetrieved])) { return false; }
+	if (monocular && !getNx<bool>(command.result()[monocularSerialNumber()][itmRetrieved])) { return false; }
 	return true;
 }
 
 void Ensenso::rectifyImages(bool stereo, bool monocular) {
 	NxLibCommand command(cmdRectifyImages);
-	if (stereo) setNx(command.parameters()[itmCameras][0], serialNumber());
-	if (monocular) setNx(command.parameters()[itmCameras][stereo ? 1 : 0], monocularSerialNumber());
+	if (stereo) { setNx(command.parameters()[itmCameras][0], serialNumber()); }
+	if (monocular) { setNx(command.parameters()[itmCameras][stereo ? 1 : 0], monocularSerialNumber()); }
 	executeNx(command);
 }
 
@@ -286,15 +287,15 @@ void Ensenso::discardCalibrationPatterns() {
 void Ensenso::recordCalibrationPattern(std::string * parameters_dump_info, std::string * result_dump_info) {
 	// disable FlexView
 	int flex_view = flexView();
-	if (flex_view > 0) setFlexView(0);
+	if (flex_view > 0) { setFlexView(0); }
 
 	// Capture image with front-light.
 	setProjector(false);
-	if (hasFrontLight()) setFrontLight(true);
+	if (hasFrontLight()) { setFrontLight(true); }
 
-	retrieve(true, 1500, true, false);
+	retrieve(true, 1500, true, false); //NOLINT
 
-	if (hasFrontLight()) setFrontLight(false);
+	if (hasFrontLight()) { setFrontLight(false); }
 	setProjector(true);
 
 	// Find the pattern.
@@ -303,13 +304,13 @@ void Ensenso::recordCalibrationPattern(std::string * parameters_dump_info, std::
 	setNx(command_collect_pattern.parameters()[itmDecodeData], true);
 
 	// Optionally copy the parameters for debugging.
-	if (parameters_dump_info) *parameters_dump_info = command_collect_pattern.parameters().asJson(true);
+	if (static_cast<bool>(parameters_dump_info)) { *parameters_dump_info = command_collect_pattern.parameters().asJson(true); }
 
 	try {
 		executeNx(command_collect_pattern);
 	} catch (std::exception const & e) {
 		// Optionally copy the result for debugging.
-		if (result_dump_info) *result_dump_info = command_collect_pattern.result().asJson(true);
+		if (static_cast<bool>(result_dump_info)) { *result_dump_info = command_collect_pattern.result().asJson(true); }
 		throw;
 	}
 
@@ -319,7 +320,7 @@ void Ensenso::recordCalibrationPattern(std::string * parameters_dump_info, std::
 	}
 
 	// Optionally copy the result for debugging.
-	if (result_dump_info) *result_dump_info = command_collect_pattern.result().asJson(true);
+	if (static_cast<bool>(result_dump_info)) { *result_dump_info = command_collect_pattern.result().asJson(true); }
 }
 
 Eigen::Isometry3d Ensenso::detectCalibrationPattern(int const samples, bool ignore_calibration)  {
@@ -331,7 +332,7 @@ Eigen::Isometry3d Ensenso::detectCalibrationPattern(int const samples, bool igno
 
 	// Disable FlexView (should not be necessary here, but appears to be necessary for cmdEstimatePatternPose)
 	int flex_view = flexView();
-	if (flex_view > 0) setFlexView(0);
+	if (flex_view > 0) { setFlexView(0); }
 
 	// Get the pose of the pattern.
 	NxLibCommand command_estimate_pose(cmdEstimatePatternPose);
@@ -343,7 +344,8 @@ Eigen::Isometry3d Ensenso::detectCalibrationPattern(int const samples, bool igno
 	}
 
 	Eigen::Isometry3d result = toEigenIsometry(command_estimate_pose.result()["Patterns"][0][itmPatternPose]);
-	result.translation() *= 0.001;
+	constexpr double TRANSLATION_RATE = 0.001;
+	result.translation() *= TRANSLATION_RATE;
 
 	// Transform back to left stereo lens.
 	if (ignore_calibration) {
@@ -361,16 +363,18 @@ std::string Ensenso::getWorkspaceCalibrationFrame() {
 	NxLibItem item = stereo_node[itmLink][itmTarget];
 	int error;
 	std::string result = item.asString(&error);
-	return error ? "" : result;
+	return static_cast<bool>(error) ? "" : result;
 }
 
 std::optional<Eigen::Isometry3d> Ensenso::getWorkspaceCalibration() {
 	// Check if the camera is calibrated.
-	if (getWorkspaceCalibrationFrame().empty()) return std::nullopt;
+	if (getWorkspaceCalibrationFrame().empty()) { return std::nullopt; }
 
 	// convert from mm to m
 	Eigen::Isometry3d pose = toEigenIsometry(stereo_node[itmLink]);
-	pose.translation() *= 0.001;
+
+	constexpr double TRANSLATION_RATE = 0.001;
+	pose.translation() *= TRANSLATION_RATE;
 
 	return pose;
 }
@@ -389,14 +393,18 @@ Ensenso::CalibrationResult Ensenso::computeCalibration(
 	// camera pose initial guess
 	if (camera_guess) {
 		Eigen::Isometry3d scaled_camera_guess = *camera_guess;
-		scaled_camera_guess.translation() *= 1000;
+
+		constexpr double TRANSLATION_RATE = 1000.0;
+		scaled_camera_guess.translation() *= TRANSLATION_RATE;
 		setNx(calibrate.parameters()[itmLink], scaled_camera_guess);
 	}
 
 	// pattern pose initial guess
 	if (pattern_guess) {
 		Eigen::Isometry3d scaled_pattern_guess = *pattern_guess;
-		scaled_pattern_guess.translation() *= 1000;
+
+		constexpr double TRANSLATION_RATE = 1000.0;
+		scaled_pattern_guess.translation() *= TRANSLATION_RATE;
 		setNx(calibrate.parameters()[itmPatternPose], scaled_pattern_guess);
 	}
 
@@ -404,37 +412,41 @@ Ensenso::CalibrationResult Ensenso::computeCalibration(
 	setNx(calibrate.parameters()[itmSetup], moving ? valMoving : valFixed);
 
 	// name of the target coordinate system
-	if (target != "") {
+	if (!target.empty()) {
 		setNx(calibrate.parameters()[itmTarget], target);
 	}
 
 	// copy robot poses to parameters
 	for (size_t i = 0; i < robot_poses.size(); i++) {
 		Eigen::Isometry3d scaled_robot_pose = robot_poses[i];
-		scaled_robot_pose.translation() *= 1000;
+
+		constexpr double TRANSLATION_RATE = 1000.0;
+		scaled_robot_pose.translation() *= TRANSLATION_RATE;
 		setNx(calibrate.parameters()[itmTransformations][i], scaled_robot_pose);
 	}
 
 	// Optionally copy the parameters for debugging.
-	if (parameters_dump_info) *parameters_dump_info = calibrate.parameters().asJson(true);
+	if (static_cast<bool>(parameters_dump_info)) { *parameters_dump_info = calibrate.parameters().asJson(true); }
 
 	try {
 		// execute calibration command
 		executeNx(calibrate);
 	} catch (std::exception const & e) {
 		// Optionally copy the result for debugging.
-		if (result_dump_info) *result_dump_info = calibrate.result().asJson(true);
+		if (static_cast<bool>(result_dump_info)) { *result_dump_info = calibrate.result().asJson(true); }
 		throw;
 	}
 
 	// return result (camera pose, pattern pose, iterations, reprojection error)
 	Eigen::Isometry3d camera_pose  = toEigenIsometry(stereo_node[itmLink]).inverse(); // "Link" is inverted
 	Eigen::Isometry3d pattern_pose = toEigenIsometry(calibrate.result()[itmPatternPose]);
-	camera_pose.translation()  *= 0.001;
-	pattern_pose.translation() *= 0.001;
+
+	constexpr double TRANSLATION_RATE = 0.001;
+	camera_pose.translation()  *= TRANSLATION_RATE;
+	pattern_pose.translation() *= TRANSLATION_RATE;
 
 	// Optionally copy the result for debugging.
-	if (result_dump_info) *result_dump_info = calibrate.result().asJson(true);
+	if (static_cast<bool>(result_dump_info)) { *result_dump_info = calibrate.result().asJson(true); }
 
 	return Ensenso::CalibrationResult{
 		camera_pose,
@@ -450,25 +462,26 @@ void Ensenso::setWorkspaceCalibration(Eigen::Isometry3d const & workspace, std::
 
 	// scale to [mm]
 	Eigen::Isometry3d workspace_mm = workspace;
-	workspace_mm.translation() *= 1000;
+	constexpr double TRANSLATION_RATE = 1000.0;
+	workspace_mm.translation() *= TRANSLATION_RATE;
 	setNx(command.parameters()[itmPatternPose], workspace_mm);
 
-	if (frame_id != "") {
+	if (!frame_id.empty()) {
 		setNx(command.parameters()[itmTarget], frame_id);
 	}
 
 	Eigen::Isometry3d defined_pose_mm = defined_pose;
-	defined_pose_mm.translation() *= 1000;
+	defined_pose_mm.translation() *= TRANSLATION_RATE;
 	setNx(command.parameters()[itmDefinedPose], defined_pose_mm);
 
 	executeNx(command);
 
-	if (store) storeWorkspaceCalibration();
+	if (store) { storeWorkspaceCalibration(); }
 }
 
 void Ensenso::clearWorkspaceCalibration(bool store) {
 	// Check if the camera is calibrated.
-	if (getWorkspaceCalibrationFrame().empty()) return;
+	if (getWorkspaceCalibrationFrame().empty()) { return; }
 
 	// calling CalibrateWorkspace with no PatternPose and DefinedPose clears the workspace.
 	NxLibCommand command(cmdCalibrateWorkspace);
@@ -477,11 +490,11 @@ void Ensenso::clearWorkspaceCalibration(bool store) {
 	executeNx(command);
 
 	// clear target name
-	// TODO: Can be removed after settings the target parameter above?
-	// TODO: Should test that.
+	// TODO(de-vri-es): Can be removed after settings the target parameter above?
+	// TODO(de-vri-es): Should test that.
 	setNx(stereo_node[itmLink][itmTarget], "");
 
-	if (store) storeWorkspaceCalibration();
+	if (store) { storeWorkspaceCalibration(); }
 }
 
 void Ensenso::storeWorkspaceCalibration() {
@@ -495,9 +508,10 @@ void Ensenso::storeWorkspaceCalibration() {
 Eigen::Isometry3d Ensenso::getMonocularLink() const {
 	// convert from mm to m
 	Eigen::Isometry3d pose = toEigenIsometry(monocular_node.value()[itmLink]);
-	pose.translation() *= 0.001;
+	constexpr double TRANSLATION_RATE = 0.001;
+	pose.translation() *= TRANSLATION_RATE;
 
 	return pose;
 }
 
-}
+} //namespace dr

@@ -11,7 +11,7 @@ namespace {
 	std::string makeCommandErrorMsg(std::string const & command, std::string const & symbol, std::string const & text, std::string const & what) {
 		return what + (what.empty() ? "" : ": ") + "Failed to execute NxLibCommand " + command + ": error " + symbol + ": " + text;
 	}
-}
+} //namespace
 
 NxError::NxError(std::string const & path, int error, std::string const & what) : NxError({path,      error}, what) {}
 NxError::NxError(NxLibItem const & item,   int error, std::string const & what) : NxError({item.path, error}, what) {}
@@ -35,8 +35,8 @@ NxCommandError NxCommandError::getCurrent(std::string const & what) {
 }
 
 void throwCommandError(int error, std::string const & what) {
-	if (error == NxLibExecutionFailed) throw NxCommandError::getCurrent(what);
+	if (error == NxLibExecutionFailed) { throw NxCommandError::getCurrent(what); }
 	throw NxError(itmExecute, error, what);
 }
 
-}
+} //namespace dr
