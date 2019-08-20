@@ -31,9 +31,9 @@ private:
 public:
 	NxLibInitGuard();
 	NxLibInitGuard(NxLibInitGuard const &) = delete;
-	NxLibInitGuard(NxLibInitGuard &&);
+	NxLibInitGuard(NxLibInitGuard &&) noexcept;
 	NxLibInitGuard& operator=(NxLibInitGuard const &) = delete;
-	NxLibInitGuard& operator=(NxLibInitGuard &&);
+	NxLibInitGuard& operator=(NxLibInitGuard &&) noexcept;
 	~NxLibInitGuard();
 };
 
@@ -79,7 +79,7 @@ public:
 	}
 
 	/// Connect to an ensenso camera.
-	Ensenso(std::string serial = "", bool connect_monocular = true, NxLibInitToken init_token = initNxLib());
+	Ensenso(std::string const & serial = "", bool connect_monocular = true, NxLibInitToken init_token = initNxLib());
 
 	/// Explicitly opt-in to default move semantics.
 	Ensenso(Ensenso &&)       = default;
@@ -112,13 +112,13 @@ public:
 	std::string monocularSerialNumber() const;
 
 	/// Loads the camera parameters from a JSON file.
-	bool loadParameters(std::string const parameters_file, bool entire_tree = false);
+	bool loadParameters(std::string const & parameters_file, bool entire_tree = false);
 
 	/// Loads the monocular camera parameters from a JSON file. Returns false if file was not found.
-	bool loadMonocularParameters(std::string const parameters_file, bool entire_tree = false);
+	bool loadMonocularParameters(std::string const & parameters_file, bool entire_tree = false);
 
 	/// Loads the monocular camera uEye parameters from a INI file. Returns false if file was not found.
-	void loadMonocularUeyeParameters(std::string const parameters_file);
+	void loadMonocularUeyeParameters(std::string const & parameters_file);
 
 	/// Check if the camera has a FlexView parameter.
 	bool hasFlexView() const;

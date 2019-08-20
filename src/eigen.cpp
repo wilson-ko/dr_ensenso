@@ -39,4 +39,4 @@ void setNx(NxLibItem const & item, Eigen::Isometry3d const & isometry, std::stri
 	setNx(item[itmRotation], Eigen::AngleAxisd{isometry.rotation()}, what);
 }
 
-}
+} //namespace dr
