@@ -24,6 +24,7 @@ if ("${jsoncpp_FOUND}" STREQUAL "FALSE")
  pkg_check_modules(JSONCPP jsoncpp)
 endif()
 
+find_package(fmt REQUIRED)
 find_package(PCL REQUIRED)
 
 # Remove python2 dependencies, we don't need these anyway.
@@ -75,6 +76,8 @@ target_link_libraries(${PROJECT_NAME}
 	${jsoncpp_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${PCL_LIBRARIES}
+	${fmt_LIBRARIES}
+	fmt::fmt
 )
 
 install(

@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <Eigen/Eigen>
 
 #include <opencv2/opencv.hpp>
@@ -12,6 +13,8 @@
 #include <optional>
 
 namespace dr {
+
+using LogFunction = std::function<void (std::string)>;
 
 enum class ImageType {
 	stereo_raw_left,
@@ -61,6 +64,9 @@ protected:
 	/// Initializtion token to allow refcounted initialization of NxLib.
 	NxLibInitToken init_token_;
 
+	/// Log function to use for verbose logging.
+	LogFunction logger_;
+
 public:
 	constexpr static bool needMonocular(ImageType image) {
 		switch (image) {
@@ -79,7 +85,7 @@ public:
 	}
 
 	/// Connect to an ensenso camera.
-	Ensenso(std::string const & serial = "", bool connect_monocular = true, NxLibInitToken init_token = initNxLib());
+	Ensenso(std::string const & serial = "", bool connect_monocular = true, LogFunction log = nullptr, NxLibInitToken init_token = initNxLib());
 
 	/// Explicitly opt-in to default move semantics.
 	Ensenso(Ensenso &&)       = default;
@@ -261,6 +267,13 @@ public:
 
 	/// Returns the calibration between ueye and ensenso.
 	Eigen::Isometry3d getMonocularLink() const;
+
+protected:
+
+	/// Log a message using the log function registered at contruction time.
+	void log(std::string message) const {
+		if (logger_) logger_(std::move(message));
+	}
 };
 
 }
